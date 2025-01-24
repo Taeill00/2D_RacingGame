@@ -23,11 +23,21 @@ public class CarController : MonoBehaviour
     [SerializeField] private Slider sliderFuel;
 
     [Header("UI Score")]
-    public float score = 0;
+    public int score = 0;
     [SerializeField] private TextMeshProUGUI textScore;
+
+    [Header("Level")]
+    public int level;
+    [SerializeField] private TextMeshProUGUI textLevel;
+
+    [Header("HitEffect")]
+    [SerializeField] private GameObject boomEffectPrefab;
+    private SpriteRenderer spriteRenderer;
 
     private void Start()
     {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+
         uiInGame.SetActive(false);
 
         curFuel = maxFuel;
@@ -39,6 +49,8 @@ public class CarController : MonoBehaviour
         HoritontalMove();
         FuelUIUpdate();
         ScoreUIUpdate();
+        LevelUIUpdate();
+        CalculateLevel();
 
         if (curFuel <= 0)
         {
@@ -94,20 +106,7 @@ public class CarController : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.CompareTag("Fuel"))
-        {
-            curFuel += 30;
-
-            if(curFuel > maxFuel)
-            {
-                curFuel = maxFuel;
-            }
-
-            Destroy(collision.gameObject);
-        }
-    }
+ 
 
     private void FuelUIUpdate()
     {
@@ -117,9 +116,70 @@ public class CarController : MonoBehaviour
 
     #endregion
 
+    #region Enemy
+
+    private IEnumerator hitEffectCo()
+    {
+        int count = 0;
+
+        while (count <= 2)
+        {
+            spriteRenderer.color = Color.red;
+            yield return new WaitForSeconds(0.2f);
+            spriteRenderer.color = Color.white;
+            yield return new WaitForSeconds(0.2f);
+
+            count++;
+        }
+    }
+
+    #endregion
+
+    #region Level
+
+    private void CalculateLevel()
+    {
+        level = score / 100;
+    }
+
+    #endregion
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Fuel"))
+        {
+            curFuel += 30;
+
+            if (curFuel > maxFuel)
+            {
+                curFuel = maxFuel;
+            }
+
+            Destroy(collision.gameObject);
+        }
+        else if (collision.CompareTag("Enemy"))
+        {
+            Debug.Log("충돌발생");
+
+            curFuel -= 10;
+
+            StartCoroutine(hitEffectCo());
+            var boomEffect = Instantiate(boomEffectPrefab, collision.transform.position, Quaternion.identity);
+
+            Destroy(collision.gameObject);
+            Destroy(boomEffect, 2);
+        }
+    }
+
+
     private void ScoreUIUpdate()
     {
         textScore.text = "Score\n" + score.ToString();
+    }
+
+    private void LevelUIUpdate()
+    {
+        textLevel.text = "Level:" + (level+1).ToString();
     }
 
 }
